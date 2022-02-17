@@ -1,19 +1,16 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { Button } from '../button/button';
-import { EmptyFn } from '../../types/news.model';
+import { News } from '../../types/news.model';
 import { ReactComponent as ArrowSvg } from '../../images/arrow.svg';
-import { SetStateAction, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useOutsideClick } from '../../hooks/click-outside.hook';
+import { mqMax } from '../../helpers/css-helper';
 
 export type PaginationType = {
-  currentPage: number;
-  pageSize: number;
-  allItemsCount: number;
-  pagesCount: number;
-  nextClickCallback: EmptyFn<void>;
-  previousClickCallback: EmptyFn<void>;
-  setCurrentPageCallback: (page: number) => void;
-  setPageSize: (pageSize: number) => void;
+  news: Array<News>;
+  setNewsToShow(n: Array<News>): void;
+  onPageSizeChange?: (size: number) => void;
 };
 
 const generatePageNavigation = (
@@ -23,11 +20,31 @@ const generatePageNavigation = (
 ) => {
   const pageList = [];
 
-  if (currentPage <= 5) {
-    for (let index = 0; index < 9; index++) {
+  if (pagesCount <= 9) {
+    for (let index = 0; index <= 9 && index < pagesCount; index++) {
       const pageNumber = (
         <div
-          className={index === currentPage && 'active'}
+          key={index}
+          className={index === currentPage ? 'active' : undefined}
+          onClick={() => {
+            setCurrentPageCallback(index);
+          }}
+        >
+          {index + 1}
+        </div>
+      );
+
+      pageList.push(pageNumber);
+    }
+    return pageList;
+  }
+
+  if (currentPage <= 5) {
+    for (let index = 0; index < 9 && index < pagesCount; index++) {
+      const pageNumber = (
+        <div
+          key={index}
+          className={index === currentPage ? 'active' : undefined}
           onClick={() => {
             setCurrentPageCallback(index);
           }}
@@ -40,11 +57,12 @@ const generatePageNavigation = (
     }
   }
 
-  if (currentPage >= pagesCount - 4) {
+  if (currentPage >= pagesCount - 4 && pagesCount > 9) {
     for (let index = pagesCount - 9; index < pagesCount; index++) {
       const pageNumber = (
         <div
-          className={index === currentPage && 'active'}
+          key={index}
+          className={index === currentPage ? 'active' : undefined}
           onClick={() => {
             setCurrentPageCallback(index);
           }}
@@ -61,7 +79,8 @@ const generatePageNavigation = (
     for (let index = currentPage - 4; index <= currentPage + 4; index++) {
       const pageNumber = (
         <div
-          className={index === currentPage && 'active'}
+          key={index}
+          className={index === currentPage ? 'active' : undefined}
           onClick={() => {
             setCurrentPageCallback(index);
           }}
@@ -77,29 +96,65 @@ const generatePageNavigation = (
   return pageList;
 };
 
+export const getNewsPage = (
+  news: Array<News>,
+  currentPage: number,
+  pageSize: number
+) => news.slice(pageSize * currentPage, pageSize * currentPage + pageSize);
+
 export const Pagination = ({
-  pageSize,
-  setPageSize,
-  currentPage,
-  nextClickCallback,
-  previousClickCallback,
-  setCurrentPageCallback,
-  allItemsCount,
-  pagesCount
+  news,
+  setNewsToShow,
+  onPageSizeChange
 }: PaginationType) => {
-  const pageSizeList = [3, 6, 8];
+  const pageSizeList = [6, 9];
   const [opened, setIsOpened] = useState(false);
+  const pageListDropDownRef = useRef<HTMLDivElement>();
+  const [pageSize, setPageSize] = useState(6);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pagesCount, setPagesCount] = useState(
+    Math.ceil(news.length / pageSize)
+  );
+  const [dropDownTop, setDropDownTop] = useState(false);
+
+  const recalculateDirection = () => {
+    if (pageListDropDownRef.current) {
+      const { bottom } = pageListDropDownRef.current.getBoundingClientRect();
+
+      if (bottom + 60 >= window.innerHeight) {
+        setDropDownTop(true);
+      } else {
+        setDropDownTop(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    recalculateDirection();
+  }, []);
+
+  useEffect(() => {
+    setPagesCount(Math.ceil(news.length / pageSize));
+    onPageSizeChange(pageSize);
+  }, [news.length, onPageSizeChange, pageSize]);
+
+  useEffect(() => {
+    setNewsToShow(getNewsPage(news, currentPage, pageSize));
+  }, [currentPage, news, pageSize, setNewsToShow]);
 
   const style = {
     pagination: css({
-      gridColumnStart: '2',
-      gridColumnEnd: '5',
       display: 'flex',
       justifyContent: 'space-between',
-      fontSize: '0.9rem',
-      alignItems: 'center'
+      alignItems: 'center',
+      alignSelf: 'end',
+      marginTop: '2rem',
+      [mqMax['750']]: {
+        alignSelf: 'center'
+      }
     }),
     navigation: css({
+      fontSize: '0.9rem',
       label: 'navigation',
       display: 'flex',
       gap: '0.1rem',
@@ -110,7 +165,11 @@ export const Pagination = ({
       alignItems: 'center',
       justifyContent: 'space-around',
       backgroundColor: '#242525',
-      color: 'white'
+      color: 'white',
+      [mqMax[500]]: {
+        width: '19rem',
+        fontSize: '0.7rem'
+      }
     }),
     navigation_page_count: css({
       opacity: 0.25,
@@ -129,6 +188,9 @@ export const Pagination = ({
       'fontSize': '0.7rem',
       'color': '#8D8E8E',
       'fontWeight': 'bold',
+      [mqMax['500']]: {
+        gap: '0.1rem'
+      },
       '& div': {
         'cursor': 'pointer',
         'width': '1rem',
@@ -209,13 +271,14 @@ export const Pagination = ({
       gap: '0.5rem'
     }),
     page_count_list: css({
+      'label': 'page_count_list',
       'display': 'flex',
       'flexDirection': 'column',
       'position': 'absolute',
       'background': '#191818',
       'width': '-webkit-fill-available;',
       'left': 0,
-      'top': '1.8rem',
+      'top': dropDownTop ? '-3.5rem' : '1.8rem',
       'borderBottomLeftRadius': '0.3rem',
       'borderBottomRightRadius': '0.3rem',
       '& div': {
@@ -224,24 +287,58 @@ export const Pagination = ({
           backgroundColor: '#383838',
           cursor: 'pointer'
         }
+      },
+      [mqMax['500']]: {
+        top: dropDownTop ? '-3.1rem' : '1.8rem'
       }
     }),
     current_page_count: css({}),
     show_text: css({
-      opacity: 0.3
+      opacity: 0.3,
+      [mqMax['500']]: {
+        display: 'none'
+      }
     })
   };
+
+  const onListOutsideClick = useCallback(() => {
+    setIsOpened(false);
+  }, []);
+
+  const onPageSizeSelect = (size: number) => {
+    setIsOpened(false);
+    setPageSize(size);
+  };
+
+  const goToNextPage = useCallback(
+    () => setCurrentPage(currentPage + 1),
+    [currentPage]
+  );
+  const goToPreviousPage = useCallback(
+    () => setCurrentPage(currentPage - 1),
+    [currentPage]
+  );
+  const goToPage = useCallback((page: number) => setCurrentPage(page), []);
+
+  useOutsideClick({
+    ref: pageListDropDownRef,
+    callback: onListOutsideClick,
+    isActive: opened
+  });
+
   return (
     <div css={style.pagination}>
       <div css={style.navigation}>
         <div css={style.pagination_props}>
           <div css={style.show_text}>Show</div>
-          <div css={style.page_count_dd}>
+          <div ref={pageListDropDownRef} css={style.page_count_dd}>
             <div css={style.current_page_count}>{pageSize}</div>
             {opened && (
               <div css={style.page_count_list}>
                 {pageSizeList.map((size) => (
-                  <div onClick={() => setPageSize(size)}>{size}</div>
+                  <div key={size} onClick={() => onPageSizeSelect(size)}>
+                    {size}
+                  </div>
                 ))}
               </div>
             )}
@@ -249,6 +346,7 @@ export const Pagination = ({
             <Button
               css={[style.btn, style.btn_bottom]}
               onClick={() => {
+                recalculateDirection();
                 setIsOpened((state) => !state);
               }}
             >
@@ -257,28 +355,20 @@ export const Pagination = ({
           </div>
         </div>
         <div css={style.pages}>
-          {generatePageNavigation(
-            currentPage,
-            pagesCount,
-            setCurrentPageCallback
-          )}
+          {generatePageNavigation(currentPage, pagesCount, goToPage)}
         </div>
         <div>|</div>
         <div css={style.button_container}>
           <Button
             css={[style.btn, style.btn_left]}
-            onClick={() => {
-              previousClickCallback();
-            }}
+            onClick={goToPreviousPage}
             disabled={currentPage === 0}
           >
             <ArrowSvg />
           </Button>
           <Button
             css={[style.btn, style.btn_right]}
-            onClick={() => {
-              nextClickCallback();
-            }}
+            onClick={goToNextPage}
             disabled={currentPage === pagesCount - 1}
           >
             <ArrowSvg />

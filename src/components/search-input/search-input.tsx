@@ -1,8 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { mqMax } from '../../helpers/css-helper';
+import { useOutsideClick } from '../../hooks/click-outside.hook';
 import { useAppSelector } from '../../hooks/reducer.hooks';
 import SearchIcon from '../../images/search.svg';
+import { News } from '../../types/news.model';
 
 const style = {
   search: css({
@@ -34,14 +37,27 @@ const style = {
     }
   }),
   search_result_container: css({
-    label: 'search_result_container',
-    position: 'absolute',
-    backgroundColor: '#191818',
-    width: '100%',
-    top: '1.7rem',
-    color: '#a9a9a9',
-    fontSize: '0.7rem',
-    zIndex: 1
+    'label': 'search_result_container',
+    'position': 'absolute',
+    'backgroundColor': '#191818',
+    'width': '100%',
+    'top': '1.7rem',
+    'color': '#a9a9a9',
+    'fontSize': '0.7rem',
+    'zIndex': 1,
+    'maxHeight': '35rem',
+    'overflowY': 'auto',
+    '&::-webkit-scrollbar': {
+      width: '0.6rem',
+      border: '1px solid #4e3e3e'
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: '#8a8a8a'
+    },
+    [mqMax[500]]: {
+      right: '0%',
+      width: '17rem'
+    }
   }),
   search_result: css({
     'label': 'search_result',
@@ -49,6 +65,8 @@ const style = {
     'display': 'flex',
     'alignItems': 'center',
     'cursor': 'pointer',
+    'color': '#a9a9a9',
+    'textDecoration': 'none',
     '&:hover': {
       backgroundColor: '#383838'
     }
@@ -58,7 +76,18 @@ const style = {
 export const SearchInput = () => {
   const news = useAppSelector((state) => state.newsPage.news);
   const [searchInputVal, setSearchInputVal] = useState('');
-  const [searchResult, setSearchResult] = useState([]);
+  const [searchResult, setSearchResult] = useState<Array<News>>([]);
+  const searchResultContainerRef = useRef();
+
+  const onOutsideClickCallback = useCallback(() => {
+    setSearchResult([]);
+    setSearchInputVal('');
+  }, []);
+
+  useOutsideClick({
+    ref: searchResultContainerRef,
+    callback: onOutsideClickCallback
+  });
 
   useEffect(() => {
     const items = news.filter((x) =>
@@ -68,7 +97,7 @@ export const SearchInput = () => {
   }, [news, searchInputVal, setSearchResult]);
 
   return (
-    <div css={style.search}>
+    <div ref={searchResultContainerRef} css={style.search}>
       <input
         value={searchInputVal}
         onInput={(event: React.ChangeEvent<HTMLInputElement>) =>
@@ -80,7 +109,9 @@ export const SearchInput = () => {
       ></input>
       <div css={style.search_result_container}>
         {searchResult?.map((n) => (
-          <div css={style.search_result}>{n.headline}</div>
+          <a css={style.search_result} href={n.url} target={'_blank'}>
+            {n.headline}
+          </a>
         ))}
       </div>
     </div>

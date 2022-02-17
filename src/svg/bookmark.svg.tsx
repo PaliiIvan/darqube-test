@@ -1,9 +1,29 @@
-import React from 'react';
+/** @jsxImportSource @emotion/react */
+import { useEffect, useState } from 'react';
+import { css } from '@emotion/react';
 
 export const BookMarkSvgIcon = ({ filled }: { filled: boolean }) => {
+  const [showAnimation, setShowAnimation] = useState(false);
+
+  const style = {
+    test: css({
+      transition: '1s',
+      transform: 'scale(1.2)',
+      fill: '#da4848'
+    })
+  };
+
+  useEffect(() => {
+    setShowAnimation(true);
+    setTimeout(() => {
+      setShowAnimation(false);
+    }, 1000);
+  }, [filled]);
+
   if (filled) {
     return (
       <svg
+        css={showAnimation && style.test}
         width="13"
         height="14"
         viewBox="0 0 41 44"

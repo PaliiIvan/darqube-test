@@ -1,60 +1,60 @@
-import React, { useState } from 'react';
-
-import { StyleSheet, css } from 'aphrodite';
+/** @jsxImportSource @emotion/react */
+import { css } from '@emotion/react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../hooks/reducer.hooks';
-import { NewsPageAction } from '../../state/news-page/news.reducer';
+import { mqMax } from '../../helpers/css-helper';
+import { useAppSelector } from '../../hooks/reducer.hooks';
 import { isBookmarksPresentSelector } from '../../state/global.selectors';
 import { SearchInput } from '../search-input/search-input';
 
 export const Navigation = () => {
   const [isNewsSelected, setIsNewsSelected] = useState(true);
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const isBookmarksPresent = useAppSelector(isBookmarksPresentSelector);
 
-  const style = StyleSheet.create({
-    nav_container: {
+  const style = {
+    nav_container: css({
       listStyleType: 'none',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center'
-    },
-    container: {
+    }),
+    container: css({
       listStyleType: 'none',
       display: 'flex',
       padding: 0
-    },
-    li: {
+    }),
+    li: css({
       cursor: 'pointer',
       margin: '0rem 1rem 0 0',
       fontSize: '1.5rem',
       fontWeight: 'bold',
-      color: '#868787'
-    },
-    active: {
+      color: '#868787',
+      [mqMax[750]]: {
+        fontSize: '1rem'
+      }
+    }),
+    active: css({
       color: 'white'
-    },
-    disabled: {
+    }),
+    disabled: css({
       opacity: 0.2,
       pointerEvents: 'none'
-    },
-    search_container: {
+    }),
+    search_container: css({
       width: '20rem'
-    }
-  });
+    })
+  };
 
   const onNavigationSelect = (page: 'news' | 'bookmarks') => {
     switch (page) {
       case 'news': {
         setIsNewsSelected(true);
-        dispatch(NewsPageAction.resetPagination());
         navigate('/news');
         break;
       }
       case 'bookmarks': {
         setIsNewsSelected(false);
-        dispatch(NewsPageAction.resetPagination());
         navigate('/bookmarks');
         break;
       }
@@ -63,26 +63,26 @@ export const Navigation = () => {
     }
   };
   return (
-    <nav className={css(style.nav_container)}>
-      <ul className={css(style.container)}>
+    <nav css={style.nav_container}>
+      <ul css={style.container}>
         <li
           onClick={() => onNavigationSelect('news')}
-          className={css(style.li, isNewsSelected && style.active)}
+          css={[style.li, isNewsSelected && style.active]}
         >
           News
         </li>
         <li
           onClick={() => onNavigationSelect('bookmarks')}
-          className={css(
+          css={[
             style.li,
             !isNewsSelected && style.active,
             !isBookmarksPresent && style.disabled
-          )}
+          ]}
         >
           Bookmarks
         </li>
       </ul>
-      <div className={css(style.search_container)}>
+      <div css={style.search_container}>
         <SearchInput></SearchInput>
       </div>
     </nav>

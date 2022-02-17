@@ -1,50 +1,48 @@
 /** @jsxImportSource @emotion/react */
 
-//import { StyleSheet } from '../../helpers/aphrodite';
 import { BookMarkSvgIcon } from 'src/svg/bookmark.svg';
 import { GoToIcon } from '../../svg/got_to.svg';
-import { EmptyFn } from '../../types/news.model';
-import { css } from '@emotion/react';
+import { News } from '../../types/news.model';
+import { css, keyframes, SerializedStyles } from '@emotion/react';
+import { mqMax } from '../../helpers/css-helper';
+import { formatDate } from '../../helpers/data-helper';
 
 export type CartType = {
-  related: string;
-  date: Date;
-  headline: string;
-  summary: string;
-  image: string;
+  news: News;
   isResearchedCart?: boolean;
-  addToBookmarkCallback: EmptyFn<void>;
-  removeFromBookmarkCallback: EmptyFn<void>;
-  isInBookmark: boolean;
-};
-
-const formatDate = (date: Date) => {
-  const day = date.toLocaleString('default', { day: '2-digit' });
-  const month = date.toLocaleString('default', { month: 'short' });
-
-  return `${day} ${month}`;
+  addToBookmarkCallback(id: number): void;
+  removeFromBookmarkCallback(id: number): void;
+  size: 'medium' | 'small';
+  className?: SerializedStyles;
 };
 
 export const Cart = ({
-  related,
-  date,
-  headline,
-  summary,
-  image,
+  news,
   addToBookmarkCallback,
   removeFromBookmarkCallback,
   isResearchedCart = false,
-  isInBookmark = false
+  size = 'medium',
+  className = null
 }: CartType) => {
+  const rotationAnimation = keyframes({
+    from: {
+      height: '6ch'
+    },
+    to: {
+      height: '25ch'
+    }
+  });
+
   const cart_summary = css({
     label: 'cart_summary',
     marginBottom: '1rem',
-    fontSize: '0.8rem',
+    fontSize: size === 'medium' ? '0.8rem' : '0.7rem',
     opacity: 0.8,
     overflow: 'hidden',
     background: '-webkit-linear-gradient(#eee, #333)',
     WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
+    WebkitTextFillColor: 'transparent',
+    height: '6ch'
   });
 
   const style = {
@@ -55,7 +53,7 @@ export const Cart = ({
       justifyContent: 'space-between',
       width: '100%',
       height: '100%',
-      background: `url(${image}) center no-repeat`,
+      background: `url(${news.image}) center no-repeat`,
       backgroundSize: 'cover',
       color: 'white',
       borderRadius: '0.3rem'
@@ -77,43 +75,48 @@ export const Cart = ({
       backgroundColor: 'rgb(0 0 0 / 50%)'
     }),
     cart_footer: css({
-      'label': 'cart_footer',
-      'display': 'flex',
-      'flexDirection': 'column',
-      'padding': '1rem',
-      'background': 'rgb(0 0 0 / 76%)',
-      'height': '15vh',
-      'borderBottomLeftRadius': '0.26rem',
-      'borderBottomRightRadius': '0.26rem',
+      label: 'cart_footer',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '1rem',
+      background: 'rgb(0 0 0 / 76%)',
+      height: '20vh',
+      borderBottomLeftRadius: '0.26rem',
+      borderBottomRightRadius: '0.26rem',
       '&:hover': {
-        'height': '80%',
+        height: '80%',
         [`.css-${cart_summary.name}`]: {
           background: '-webkit-linear-gradient(#eee, #fff)',
           WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        },
-        '.cart_type': {
-          display: 'none'
+          WebkitTextFillColor: 'transparent',
+          animation: `${rotationAnimation} 1s forwards`
         }
       },
-      'transition': '0.7s'
+      transition: '0.7s'
     }),
+    footer_content: css({}),
     cart_headline: css({
       label: 'cart_headline',
       marginBottom: '1rem',
-      fontSize: '1rem',
+      fontSize: size === 'medium' ? '1rem' : '0.8rem',
       textShadow: 'black 0px 0px 2px',
-      fontWeight: 600
+      fontWeight: 600,
+      [mqMax[1260]]: {
+        fontSize: '0.8rem'
+      }
     }),
     cart_footer_information: css({
       label: 'cart_footer_information',
       display: 'flex',
       justifyContent: 'space-between',
       flexDirection: 'row',
-      fontSize: '0.8rem',
+      fontSize: size === 'medium' ? '0.8rem' : '0.6rem',
       color: '#babcbe',
       alignItems: 'center',
-      marginTop: 'auto'
+      marginTop: 'auto',
+      [mqMax[1260]]: {
+        fontSize: '0.6rem'
+      }
     }),
     header: css({
       label: 'header',
@@ -141,7 +144,16 @@ export const Cart = ({
       flexDirection: 'row',
       alignItems: 'center',
       color: 'white',
-      gap: '0.5rem'
+      gap: '0.5rem',
+      cursor: 'pointer',
+      textDecoration: 'none',
+      ':hover': {
+        textDecoration: 'underline',
+
+        '& svg': {
+          fill: 'white'
+        }
+      }
     }),
     link_date: css({
       label: 'link_date',
@@ -156,15 +168,22 @@ export const Cart = ({
     }),
     bookmark: css({
       label: 'bookmark',
-      height: '14px'
+      '& svg': {
+        height: size === 'medium' ? '14px' : '12px'
+      },
+      height: size === 'medium' ? '14px' : '12px',
+      marginLeft: '0.4rem',
+      [mqMax[1260]]: {
+        height: '12px'
+      }
     })
   };
 
   return (
-    <div css={style.cart_container}>
+    <div css={[style.cart_container, className]}>
       <header css={style.header}>
         <div css={style.cart_type} className="cart_type">
-          {related}
+          {news.related}
         </div>
         {isResearchedCart && (
           <div css={style.research_badge}>LATEST RESEARCH</div>
@@ -172,23 +191,36 @@ export const Cart = ({
       </header>
 
       <footer css={style.cart_footer}>
-        <div css={style.cart_headline}>{headline}</div>
-        <div css={cart_summary}>{summary}</div>
+        <div css={style.footer_content}>
+          <div css={style.cart_headline}>
+            {news.headline?.length > 70
+              ? `${news.headline.slice(0, 70)}...`
+              : news.headline}
+          </div>
+          <div css={cart_summary}>{news.summary}</div>
+        </div>
+
         <div css={style.cart_footer_information}>
           <div css={style.link_date}>
-            <div css={style.research_link}>
+            <a href={news.url} target={'_blank'} css={style.research_link}>
               <GoToIcon /> <div>Read the research</div>
-            </div>
+            </a>
             <div>|</div>
-            <div css={style.date}>{`${formatDate(date)}`}</div>
+            <div css={style.date}>{`${formatDate(news.datetime)}`}</div>
           </div>
 
-          {!isInBookmark ? (
-            <div css={style.bookmark} onClick={addToBookmarkCallback}>
+          {!news.isInBookmarks ? (
+            <div
+              css={style.bookmark}
+              onClick={() => addToBookmarkCallback(news.id)}
+            >
               <BookMarkSvgIcon filled={false} />
             </div>
           ) : (
-            <div css={style.bookmark} onClick={removeFromBookmarkCallback}>
+            <div
+              css={style.bookmark}
+              onClick={() => removeFromBookmarkCallback(news.id)}
+            >
               <BookMarkSvgIcon filled={true} />
             </div>
           )}

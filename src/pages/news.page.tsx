@@ -1,106 +1,231 @@
-import React, { useCallback, useEffect, useState } from 'react';
+/** @jsxImportSource @emotion/react */
+import { useCallback, useState } from 'react';
 import { Cart } from 'src/components/cart/cart';
 import { Pagination } from '../components/pagination/pagination';
-import { useAppDispatch, useAppSelector } from '../hooks/reducer.hooks';
+import { useAppDispatch } from '../hooks/reducer.hooks';
 import { NewsPageAction } from '../state/news-page/news.reducer';
+import { css } from '@emotion/react';
+import { News } from '../types/news.model';
+import { useCurrentPageName } from '../hooks/navigation.hook';
+import { CSSMediaQueryValues, mqMax } from '../helpers/css-helper';
 
-import { StyleSheet, css } from 'aphrodite';
-import { getNewsPage } from '../state/global.selectors';
-
-const NewsPage = () => {
-  const { pagination, news } = useAppSelector((state) => state.newsPage);
-
-  const newsToShow = useAppSelector((state) => getNewsPage(state, pagination));
+const NewsPage = ({ news }: { news: Array<News> }) => {
+  const [pageSize, setPageSize] = useState<number>();
+  const [newsToShow, setNewsToShow] = useState<Array<News>>([]);
   const dispatch = useAppDispatch();
+  const location = useCurrentPageName();
+  const lastNews = news[news?.length - 1];
 
-  const style = StyleSheet.create({
-    container: {
+  const generateStyleRelatedOnPageSize = (
+    size: number,
+    forSize?: CSSMediaQueryValues
+  ) => {
+    switch (size) {
+      case 6: {
+        if (location !== 'news') {
+          if (forSize === 860) {
+            return '50% 50%';
+          }
+          if (forSize === 750) {
+            return '100%';
+          }
+          return '33% 33% 33%';
+        }
+
+        switch (forSize) {
+          case 750: {
+            return '100%';
+          }
+          case 860: {
+            return '50% 50%';
+          }
+          case 1064: {
+            return '1fr 30% 30%';
+          }
+          default: {
+            return '1fr 20% 20% 20%';
+          }
+        }
+      }
+      case 9: {
+        if (location !== 'news') {
+          if (forSize === 860) {
+            return '50% 50%';
+          }
+          if (forSize === 750) {
+            return '100%';
+          }
+          return '33% 33% 33%';
+        }
+
+        switch (forSize) {
+          case 1064:
+          case 1188:
+            return '1fr 30% 30%';
+          case 860: {
+            return '50% 50%';
+          }
+          case 750: {
+            return '100%';
+          }
+          default: {
+            return '1fr 20% 20% 20%';
+          }
+        }
+      }
+      default: {
+        return '';
+      }
+    }
+  };
+
+  const getPageRowsSize = (size: number, forSize?: CSSMediaQueryValues) => {
+    switch (size) {
+      case 6: {
+        switch (forSize) {
+          case 750: {
+            if (location !== 'news') {
+              return 'repeat(5, 25rem)';
+            }
+            return 'repeat(7, 25rem)';
+          }
+          case 860: {
+            if (location !== 'news') {
+              return 'repeat(3, 25rem)';
+            }
+            return 'repeat(4, 25rem)';
+          }
+          case 1064: {
+            if (location !== 'news') {
+              return 'repeat(2, 25rem)';
+            }
+            return 'repeat(3, 25rem)';
+          }
+          default: {
+            return '22rem 22rem ';
+          }
+        }
+      }
+      case 9: {
+        switch (forSize) {
+          case 750: {
+            if (location !== 'news') {
+              return 'repeat(9, 25rem)';
+            }
+            return 'repeat(10,25rem)';
+          }
+          case 860: {
+            return 'repeat(6, 25rem)';
+          }
+          case 1064:
+          case 1188: {
+            if (location !== 'news') {
+              return 'repeat(6, 25rem)';
+            }
+            return 'repeat(5, 25rem)';
+          }
+
+          default:
+            return 'repeat(3,25rem)';
+        }
+      }
+    }
+    return '50% 50%';
+  };
+
+  const style = {
+    container: css({
+      display: 'flex',
+      flexDirection: 'column'
+    }),
+    grid_container: css({
       color: 'white',
       display: 'grid',
-      height: '85vh',
-      gridTemplateColumns: '2fr 20% 20% 20%',
-      gridTemplateRows: '45% 45% 5rem',
-      gridGap: '1rem'
-    },
-    last_search_item: {
-      gridRowStart: '1',
-      gridRowEnd: '3',
-      height: '80%'
-    },
-    pagination: {
-      gridColumnStart: '2',
-      gridColumnEnd: '5'
-    }
-  });
+      gridTemplateColumns: generateStyleRelatedOnPageSize(pageSize),
+      gridTemplateRows: getPageRowsSize(pageSize),
+      gridGap: '1rem',
+      [mqMax[1188]]: {
+        gridTemplateColumns: generateStyleRelatedOnPageSize(pageSize, 1188),
+        gridTemplateRows: getPageRowsSize(pageSize, 1188),
+        height: pageSize === 9 && '100%'
+      },
+      [mqMax[1064]]: {
+        gridTemplateColumns: generateStyleRelatedOnPageSize(pageSize, 1064),
+        gridTemplateRows: getPageRowsSize(pageSize, 1064),
+        height: '100%'
+      },
+      [mqMax[860]]: {
+        gridTemplateColumns: generateStyleRelatedOnPageSize(pageSize, 860),
+        gridTemplateRows: getPageRowsSize(pageSize, 860)
+      },
+      [mqMax[750]]: {
+        gridTemplateColumns: generateStyleRelatedOnPageSize(pageSize, 750),
+        gridTemplateRows: getPageRowsSize(pageSize, 750)
+      }
+    }),
+    last_search_item: css({
+      gridRowStart: 1,
+      gridRowEnd: 4,
+      height: '25rem',
+      [mqMax[1188]]: {
+        gridRowEnd: pageSize === 9 ? 6 : 4
+      },
+      [mqMax[860]]: {
+        gridRowStart: 1,
+        gridRowEnd: 1,
+        gridColumnStart: 1,
+        gridColumnEnd: 3
+      },
+      [mqMax['750']]: {
+        gridRowStart: 1,
+        gridRowEnd: 1,
+        gridColumnStart: 1,
+        gridColumnEnd: 1
+      }
+    })
+  };
 
-  const goToNextPage = useCallback(
-    () => dispatch(NewsPageAction.nextNewsPage()),
-    [dispatch]
-  );
-  const goToPreviousPage = useCallback(
-    () => dispatch(NewsPageAction.previousNewsPage()),
-    [dispatch]
-  );
-  const goToPage = useCallback(
-    (page: number) => dispatch(NewsPageAction.changePage(page)),
-    [dispatch]
-  );
-  const changePageSize = useCallback(
-    (size: number) => {
-      dispatch(NewsPageAction.changePageSize(size));
-    },
+  const addToBookmark = useCallback(
+    (id: number) => dispatch(NewsPageAction.addToBookmark(id)),
     [dispatch]
   );
 
-  const addToBookmark = (id: number) =>
-    dispatch(NewsPageAction.addToBookmark(id));
-  const removeFromBookmark = (id: number) =>
-    dispatch(NewsPageAction.removeFromBookmark(id));
+  const removeFromBookmark = useCallback(
+    (id: number) => dispatch(NewsPageAction.removeFromBookmark(id)),
+    [dispatch]
+  );
 
   return (
-    <div className={css(style.container)}>
-      <div className={css(style.last_search_item)}>
-        <Cart
-          related={news[news.length - 1]?.related}
-          date={new Date(news[news.length - 1]?.datetime)}
-          headline={news[news.length - 1]?.headline}
-          summary={news[news.length - 1]?.summary}
-          image={news[news.length - 1]?.image}
-          addToBookmarkCallback={() => {
-            addToBookmark(news[news.length - 1]?.id);
-          }}
-          removeFromBookmarkCallback={() =>
-            removeFromBookmark(news[news.length - 1]?.id)
-          }
-          isInBookmark={news[news.length - 1]?.isInBookmarks}
-          isResearchedCart={true}
-        ></Cart>
+    <div css={style.container}>
+      <div css={style.grid_container}>
+        {location === 'news' && lastNews && (
+          <div css={style.last_search_item}>
+            <Cart
+              size="medium"
+              news={lastNews}
+              addToBookmarkCallback={addToBookmark}
+              removeFromBookmarkCallback={removeFromBookmark}
+              isResearchedCart={true}
+            ></Cart>
+          </div>
+        )}
+        {newsToShow.map((n) => {
+          return (
+            <Cart
+              key={n.id}
+              news={n}
+              size={pageSize === 6 ? 'medium' : 'small'}
+              addToBookmarkCallback={addToBookmark}
+              removeFromBookmarkCallback={removeFromBookmark}
+            ></Cart>
+          );
+        })}
       </div>
-      {newsToShow.map((n) => {
-        return (
-          <Cart
-            related={n.related}
-            date={new Date(n.datetime)}
-            headline={n.headline}
-            summary={n.summary}
-            image={n.image}
-            addToBookmarkCallback={() => {
-              addToBookmark(n.id);
-            }}
-            removeFromBookmarkCallback={() => removeFromBookmark(n.id)}
-            isInBookmark={n.isInBookmarks}
-          ></Cart>
-        );
-      })}
       <Pagination
-        setPageSize={changePageSize}
-        pageSize={pagination.pageSize}
-        setCurrentPageCallback={goToPage}
-        allItemsCount={news.length}
-        currentPage={pagination.currentPage}
-        nextClickCallback={goToNextPage}
-        previousClickCallback={goToPreviousPage}
-        pagesCount={pagination.pagesCount}
+        key={location === 'news' ? 'news' : 'book'}
+        news={news}
+        setNewsToShow={setNewsToShow}
+        onPageSizeChange={setPageSize}
       ></Pagination>
     </div>
   );
