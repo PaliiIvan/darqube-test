@@ -24,12 +24,12 @@ export const Cart = ({
   size = 'medium',
   className = null
 }: CartType) => {
-  const rotationAnimation = keyframes({
+  const cartFooterAnimation = keyframes({
     from: {
       height: '6ch'
     },
     to: {
-      height: '25ch'
+      height: '23ch'
     }
   });
 
@@ -80,7 +80,7 @@ export const Cart = ({
       flexDirection: 'column',
       padding: '1rem',
       background: 'rgb(0 0 0 / 76%)',
-      height: '20vh',
+      height: '10rem',
       borderBottomLeftRadius: '0.26rem',
       borderBottomRightRadius: '0.26rem',
       '&:hover': {
@@ -89,7 +89,7 @@ export const Cart = ({
           background: '-webkit-linear-gradient(#eee, #fff)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          animation: `${rotationAnimation} 1s forwards`
+          animation: `${cartFooterAnimation} 1s forwards`
         }
       },
       transition: '0.7s'
